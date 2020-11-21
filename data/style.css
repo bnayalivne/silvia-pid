@@ -1,0 +1,73 @@
+html {
+  font-family: Arial;
+  text-align: center;
+}
+h1 {
+  color: #0F3376;
+  padding: 2vh;
+}
+p {
+  font-size: 1.5rem;
+}
+.units {
+  font-size: 1.2rem;
+ }
+.sensor-labels {
+  font-size: 1.5rem;
+  vertical-align:middle;
+  padding-bottom: 15px;
+}
+div.smoothie-chart-tooltip {
+  background: #444;
+  padding: 1em;
+  margin-top: 20px;
+  font-family: consolas;
+  color: white;
+  font-size: 10px;
+  pointer-events: none;
+}
+.metrics {
+  width: 100%;
+  margin: auto;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+  margin-top: 20px;
+}
+.row .row {
+  margin-top: 0;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 100%;
+  flex: 1;
+  max-width: 340px;
+  text-align: center;
+}
+
+label {
+  font-weight: bold;
+  height: 20px;
+}
+input {
+  width: 70px;
+  height: 25px;
+  margin: auto;
+}
+button {
+  font-size: 18px;
+}
+
+ul.prophet {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+}

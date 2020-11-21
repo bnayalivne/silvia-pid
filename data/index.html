@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rancilio Silvia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css" media="all">
+  <link rel="stylesheet" href="prophet.min.css" media="all">
+</head>
+<body>
+  <h1>Silvia</h1>
+  <div class="metrics">
+    <p>
+      <span class="sensor-labels">Current Temperature:</span>
+      <span id="temperature">N/A</span>
+      <sup class="units">&deg;C</sup>
+    </p>
+    <p>
+      <span class="sensor-labels">Target Temperature:</span>
+      <span id="targetTemperature">N/A</span>
+      <sup class="units">&deg;C</sup>
+    </p>
+    <p>
+      <span class="sensor-labels">Boiler Status:</span>
+      <span id="boilerStatus">N/A</span>
+    </p>
+  </div>
+  <div class="graph-wrapper">
+    <canvas id="tempGraph" width="350" height="200"></canvas>
+  </div>
+  <div class="config-wrapper">
+    <div class="row">
+      <div class="col">
+        <label for="configTargetTemperature">Target Temperature</label>
+        <input type="number" inputmode="numeric" name="configTargetTemperature" id="configTargetTemperature" step="1" />
+      </div>
+      <div class="col">
+        <label for="configOvershoot">Temperature Overshoot</label>
+          <input type="number" inputmode="numeric" name="configOvershoot" id="configOvershoot" step="0.1" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <h3>Normal PID</h3>
+        <label for="configP">P</label>
+          <input type="number" inputmode="numeric" name="configP" id="configP" step="0.1" />
+        <label for="configI">I</label>
+        <input type="number" inputmode="numeric" name="configI" id="configI" step="0.1" />
+        <label for="configD">D</label>
+          <input type="number" inputmode="numeric" name="configD" id="configD" step="0.1" />
+      </div>
+      <div class="col">
+        <h3>Adaptive PID</h3>
+        <label for="configAP">aP</label>
+        <input type="number" inputmode="numeric" name="configAP" id="configAP" step="0.1" />
+        <label for="configAI">aI</label>
+        <input type="number" inputmode="numeric" name="configAI" id="configAI" step="0.1" />
+        <label for="configAD">aD</label>
+        <input type="number" inputmode="numeric" name="configAD" id="configAD" step="0.1" />
+      </div>
+    </div>
+    <button id="save" type="button" onclick="updateConfig();">Save</button>
+  </div>
+  <ul class="prophet"></ul>
+</body>
+<script type="text/javascript" src="smoothie.js"></script>
+<script type="text/javascript" src="prophet.min.js"></script>
+<script>
+var smoothie = new SmoothieChart({
+  labels: {
+    precision:2
+  },
+  tooltip:true,
+  maxValue:120,
+  minValue:20
+});
+smoothie.streamTo(document.getElementById("tempGraph"), 500);
+var tempLine = new TimeSeries();
+const currentTempEl = document.getElementById('temperature');
+const targetTempEl = document.getElementById('targetTemperature');
+const boilerStatusEl = document.getElementById('boilerStatus');
+
+const updateStatus = () => {
+  fetch('/status')
+  .then(res => res.json())
+  .then(val => {
+    tempLine.append(new Date().getTime(), val.temperature);
+    currentTempEl.innerHTML = val.temperature;
+    targetTempEl.innerHTML = val.targetTemperature;
+    boilerStatusEl.innerHTML = val.boilerStatus ? 'On' : 'Off';
+    setTimeout(updateStatus, 500);
+  }).catch(err => {
+    console.error('Error getting status', err);
+    setTimeout(updateStatus, 500);
+  });
+};
+
+const configFields = [];
+
+const getConfig = () => {
+  fetch('/config')
+  .then(res => res.json())
+  .then(config => {
+    for(let i in config){
+      const field = 'config' + jsUcFirst(i);
+      configFields.push(i);
+      const element = document.getElementById(field);
+      element.value = config[i];
+    }
+  });
+}
+
+const updateConfig = () => {
+  const data = new URLSearchParams();
+  for(let i of configFields){
+    const field = 'config' + jsUcFirst(i);
+    const element = document.getElementById(field);
+    data.append(i, element.value);
+  }
+  fetch('/config', {
+    method: 'post',
+    body: data,
+  })
+  .then(() => {
+    const toast = new Message("Saved", {
+      type: 'success'
+    });
+    toast.show();
+  }).catch(err => {
+    console.error(err);
+    const toast = new Message("Could not save", {
+      type: 'error'
+    });
+    toast.show();
+  });
+}
+
+const jsUcFirst = (string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+const jsLcFirst = (string) => {
+    return string.charAt(0).toLowerCase() + string.slice(1);
+}
+
+getConfig();
+updateStatus();
+// Add to SmoothieChart
+smoothie.addTimeSeries(tempLine, {lineWidth:2,strokeStyle:'#00ff00'});
+</script>
+</html>
