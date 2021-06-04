@@ -1,5 +1,6 @@
 #include<cstdlib>
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include "SPIFFS.h"
@@ -9,10 +10,8 @@
 #include <config.h>
 #include <ArduinoJson.h>
 
+WiFiManager wifiManager;
 AsyncWebServer server(80);
-
-const char* ssid = "-----";
-const char* password = "-----";
 
 const int MAX_CONNECTION_RETRIES = 20;
 
@@ -118,18 +117,9 @@ void handleGetConfig(AsyncWebServerRequest *request){
 }
 
 void setupWeb() {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
 
-    for (int i = 0; i < MAX_CONNECTION_RETRIES && WiFi.waitForConnectResult() != WL_CONNECTED; i++) {
-        delay(1000);
-        Serial.print(".");
-        WiFi.begin(ssid, password);
-    }
-    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-        Serial.printf("WiFi Failed!\n");
-        return;
-    }
+    wifiManager.setConnectRetries(10);
+    wifiManager.autoConnect("Silvia-AP");
 
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
