@@ -14,8 +14,11 @@ AsyncWebServer server(80);
 const char* ssid = "-----";
 const char* password = "-----";
 
+const int MAX_CONNECTION_RETRIES = 20;
+
 const char* PARAM_MESSAGE = "message";
 StaticJsonDocument<BUF_SIZE> json;
+
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
@@ -32,12 +35,70 @@ void handleStatus(AsyncWebServerRequest *request) {
     request->send(200, "application/json", message);
 }
 
-void handleUpdateConfig(AsyncWebServerRequest *request){
-    if(request->hasParam("targetTemperature", true)){
-        AsyncWebParameter* p = request->getParam("targetTemperature", true);
+double getDoublePostParameter(String parameterName, AsyncWebServerRequest *request){
+    if(request->hasParam(parameterName, true)){
+        AsyncWebParameter* p = request->getParam(parameterName, true);
         String newVal = p->value();
-        double newTarget = std::atof(newVal.c_str());
-        gTargetTemp = newTarget;
+        double value = std::atof(newVal.c_str());
+        return value;
+    }
+    return -1;
+}
+
+void handleUpdateConfig(AsyncWebServerRequest *request){
+    bool updated = false;
+
+    double temp = getDoublePostParameter("targetTemperature", request);
+    if(temp > 0){
+        updated = true;
+        gTargetTemp = temp;
+    }
+
+    double n_P = getDoublePostParameter("P", request);
+    if(n_P > 0){
+        updated = true;
+        gP = n_P;
+    }
+
+    double n_I = getDoublePostParameter("I", request);
+    if(n_I > 0){
+        updated = true;
+        gI = n_I;
+    }
+
+    double n_D = getDoublePostParameter("D", request);
+    if(n_D > 0){
+        updated = true;
+        gD = n_D;
+    }
+
+    double a_P = getDoublePostParameter("aP", request);
+    if(a_P > 0){
+        updated = true;
+        gaP = a_P;
+    }
+
+    double a_I = getDoublePostParameter("aI", request);
+    if(a_I > 0){
+        updated = true;
+        gaI = a_I;
+    }
+
+    double a_D = getDoublePostParameter("aD", request);
+    if(a_D > 0){
+        updated = true;
+        gaD = a_D;
+    }
+
+
+
+    double overshoot = getDoublePostParameter("overshoot", request);
+    if(overshoot > 0){
+        updated = true;
+        gOvershoot = overshoot;
+    }
+
+    if(updated){
         saveConfig();
         request->send(200, "application/json", "{\"status\": true}");
     } else {
@@ -59,6 +120,12 @@ void handleGetConfig(AsyncWebServerRequest *request){
 void setupWeb() {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
+
+    for (int i = 0; i < MAX_CONNECTION_RETRIES && WiFi.waitForConnectResult() != WL_CONNECTED; i++) {
+        delay(1000);
+        Serial.print(".");
+        WiFi.begin(ssid, password);
+    }
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {
         Serial.printf("WiFi Failed!\n");
         return;
