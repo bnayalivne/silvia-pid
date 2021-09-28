@@ -24,13 +24,27 @@ void notFound(AsyncWebServerRequest *request) {
 }
 
 void handleStatus(AsyncWebServerRequest *request) {
+
+    String strMachineState = "Init";
+    if(machineState < 19){
+        strMachineState = "Cold start";
+    } else if(machineState >= 19 && machineState <= 20){
+        strMachineState = "Ready";
+    } else if(machineState >= 30 && machineState <= 35){
+        strMachineState = "Brewing";
+    } else if(machineState >= 40 && machineState <= 45){
+        strMachineState = "Steam";
+    }
+
     String message = "{\"temperature\": ";
     message += currentTemp;
     message += ", \"targetTemperature\": ";
     message += gTargetTemp;
     message += ", \"boilerStatus\": ";
     message += heaterState ? "true" : "false";
-    message += "}";
+    message += ", \"machineState\": \"";
+    message += strMachineState;
+    message += "\"}";
     request->send(200, "application/json", message);
 }
 

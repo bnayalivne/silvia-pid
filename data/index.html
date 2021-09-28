@@ -24,6 +24,10 @@
       <span class="sensor-labels">Boiler Status:</span>
       <span id="boilerStatus">N/A</span>
     </p>
+    <p>
+      <span class="sensor-labels">Machine State:</span>
+      <span id="machineState">N/A</span>
+    </p>
   </div>
   <div class="graph-wrapper">
     <canvas id="tempGraph" width="350" height="200"></canvas>
@@ -80,15 +84,23 @@ var tempLine = new TimeSeries();
 const currentTempEl = document.getElementById('temperature');
 const targetTempEl = document.getElementById('targetTemperature');
 const boilerStatusEl = document.getElementById('boilerStatus');
+const machineStateEl = document.getElementById('machineState');
 
 const updateStatus = () => {
-  fetch('/status')
+  const timeout = 10000;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  fetch('/status', {
+    signal: controller.signal
+  })
   .then(res => res.json())
   .then(val => {
+    clearTimeout(id);
     tempLine.append(new Date().getTime(), val.temperature);
     currentTempEl.innerHTML = val.temperature;
     targetTempEl.innerHTML = val.targetTemperature;
     boilerStatusEl.innerHTML = val.boilerStatus ? 'On' : 'Off';
+    machineStateEl.innerHTML = val.machineState;
     setTimeout(updateStatus, 500);
   }).catch(err => {
     console.error('Error getting status', err);
