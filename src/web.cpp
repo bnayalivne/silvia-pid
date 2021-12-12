@@ -40,6 +40,8 @@ void handleStatus(AsyncWebServerRequest *request) {
     message += currentTemp;
     message += ", \"targetTemperature\": ";
     message += gTargetTemp;
+    message += ", \"time\": ";
+    message += millis();
     message += ", \"boilerStatus\": ";
     message += heaterState ? "true" : "false";
     message += ", \"machineState\": \"";
