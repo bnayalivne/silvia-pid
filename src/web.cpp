@@ -18,6 +18,7 @@ const int MAX_CONNECTION_RETRIES = 20;
 const char* PARAM_MESSAGE = "message";
 StaticJsonDocument<BUF_SIZE> json;
 
+extern String local_ip;
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
@@ -117,12 +118,12 @@ void handleGetConfig(AsyncWebServerRequest *request){
 }
 
 void setupWeb() {
-
     wifiManager.setConnectRetries(10);
-    wifiManager.autoConnect("Silvia-AP");
+    wifiManager.autoConnect("RancilioSilviaPID");
 
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
+    local_ip = WiFi.localIP().toString();
     SPIFFS.begin();
 
     server.on("/status", HTTP_GET, handleStatus);

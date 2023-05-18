@@ -4,6 +4,7 @@
 #include <sensor.h>
 #include <heater.h>
 #include <PID_v1.h>
+#include <oled.h>
 #include <config.h>
 
 #define PID_INTERVAL 200
@@ -12,6 +13,7 @@
 //
 
 double currentTemp = 0;
+double currentPres = 0;
 
 double gTargetTemp=S_TSET;
 double gOvershoot=S_TBAND;
@@ -24,6 +26,8 @@ unsigned long time_now=0;
 unsigned long time_last=0;
 
 PID ESPPID(&currentTemp, &gOutputPwr, &gTargetTemp, gP, gI, gD, DIRECT);
+
+String local_ip;
 
 void setup() {
   Serial.begin(115200);
@@ -49,6 +53,7 @@ void setup() {
   setupWeb();
   setupSensor();
   setupHeater();
+  ssd1306_init();
 
   // start PID
   ESPPID.SetTunings(gP, gI, gD);
@@ -64,12 +69,12 @@ void loop() {
   time_now=millis();
   currentTemp = getCurrentTemperature();
 
-  if(abs(time_now-time_last)>=PID_INTERVAL or time_last > time_now) {
-    if( !overShootMode && abs(gTargetTemp-currentTemp)>=gOvershoot ) {        
+  if(abs((double)(time_now-time_last))>=PID_INTERVAL or time_last > time_now) {
+    if( !overShootMode && abs((double)(gTargetTemp-currentTemp))>=gOvershoot ) {        
       ESPPID.SetTunings(gaP, gaI, gaD);
       overShootMode=true;
     }
-    else if( overShootMode && abs(gTargetTemp-currentTemp)<gOvershoot ) {
+    else if( overShootMode && abs((double)(gTargetTemp-currentTemp))<gOvershoot ) {
       ESPPID.SetTunings(gP,gI,gD);
       overShootMode=false;
     }
@@ -78,5 +83,7 @@ void loop() {
     }
     time_last=time_now;
   }
+
+  ssd1306_display(currentTemp, currentPres, gTargetTemp, heaterState);
   updateHeater();
 }
