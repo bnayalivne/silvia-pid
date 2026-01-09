@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <shared.h>
+#include <pins.h>
 
 #define HEATER_INTERVAL 1000
-#define HEAT_RELAY_PIN 19
 
 float heatcycles;
 bool heaterState = 0;
@@ -10,12 +10,12 @@ unsigned long heatCurrentTime = 0, heatLastTime = 0;
 
 void setupHeater()
 {
-  pinMode(HEAT_RELAY_PIN, OUTPUT);
+  pinMode(PIN_HEAT_RELAY, OUTPUT);
 }
 
 void _turnHeatElementOnOff(bool on)
 {
-  digitalWrite(HEAT_RELAY_PIN, on);
+  digitalWrite(PIN_HEAT_RELAY, on);
   heaterState = on;
 }
 

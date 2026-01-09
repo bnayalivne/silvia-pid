@@ -2,6 +2,7 @@
 #include <Adafruit_MAX31865.h>
 #include <sensor.h>
 #include <shared.h>
+#include <pins.h>
 
 #define RREF      430.0
 #define RNOMINAL  100.0
@@ -12,7 +13,7 @@
 #define SIM_T_HEAT 0.7787
 
 // Use software SPI: CS, DI, DO, CLK
-Adafruit_MAX31865 thermo = Adafruit_MAX31865(13, 14, 27, 26);
+Adafruit_MAX31865 thermo = Adafruit_MAX31865(PIN_SENSOR_CS, PIN_SENSOR_DI, PIN_SENSOR_DO, PIN_SENSOR_CLK);
 
 double currentTempRead = 0.0;
 
