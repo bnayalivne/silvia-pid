@@ -1,8 +1,24 @@
+
 # Silvia PID Controller
 
 ESP32-based PID temperature controller for Rancilio Silvia espresso machines. Replaces the stock on/off thermostat with precise PID control for consistent brew temperatures.
 
 For the full build tutorial, see: [PID Controlled Thermostat Using ESP32 Applied to a Rancilio Silvia Coffee Machine](https://www.instructables.com/PID-Controlled-Thermostat-Using-ESP32-Applied-to-a/)
+
+## WiFi Configuration
+
+The file `data/wifi.json` is used for storing WiFi credentials. It is listed in `.gitignore` and will not be tracked by git. You may create or edit this file locally to set your WiFi SSID and password:
+
+```
+{
+  "ssid": "your_wifi_ssid",
+  "password": "your_wifi_password"
+}
+```
+
+This file is optional and should be managed per device/environment.
+
+If `wifi.json` does not exist, the machine will start in Access Point (AP) mode. You can then connect to the AP and configure the WiFi credentials directly via the web UI.
 
 ## Hardware
 

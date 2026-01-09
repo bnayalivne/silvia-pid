@@ -1,101 +1,165 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Rancilio Silvia</title>
+  <meta charset="UTF-8">
+  <title>Rancilio Silvia PID Controller</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
   <link rel="stylesheet" href="style.css" media="all">
   <link rel="stylesheet" href="prophet.min.css" media="all">
 </head>
 <body>
-  <h1>Silvia</h1>
-  <div class="metrics">
-    <p>
-      <span class="sensor-labels">Current Temperature:</span>
-      <span id="temperature">N/A</span>
-      <sup class="units">&deg;C</sup>
-    </p>
-    <p>
-      <span class="sensor-labels">Target Temperature:</span>
-      <span id="targetTemperature">N/A</span>
-      <sup class="units">&deg;C</sup>
-    </p>
-    <p>
-      <span class="sensor-labels">Boiler Status:</span>
-      <span id="boilerStatus">N/A</span>
-    </p>
-    <p>
-      <span class="sensor-labels">Machine State:</span>
-      <span id="machineState">N/A</span>
-    </p>
-  </div>
-  <div class="graph-wrapper">
-    <canvas id="tempGraph" width="350" height="200"></canvas>
-  </div>
-  <div class="config-wrapper">
-    <div class="row">
-      <div class="col">
-        <label for="configTargetTemperature">Target Temperature</label>
-        <input type="number" inputmode="numeric" name="configTargetTemperature" id="configTargetTemperature" step="1" />
-      </div>
-      <div class="col">
-        <label for="configOvershoot">Temperature Overshoot</label>
-          <input type="number" inputmode="numeric" name="configOvershoot" id="configOvershoot" step="0.1" />
+  <div class="container">
+    <header>
+      <h1>☕ Silvia PID Controller</h1>
+    </header>
+
+    <!-- Status Dashboard Card -->
+    <div class="card dashboard-card">
+      <div class="dashboard-grid">
+        <div class="temp-display">
+          <div class="temp-label">Current Temperature</div>
+          <div class="temp-value">
+            <span id="temperature">N/A</span><span class="temp-unit">°C</span>
+          </div>
+        </div>
+        <div class="status-badges">
+          <div class="status-item">
+            <span class="status-label">Target</span>
+            <span class="badge badge-info">
+              <span id="targetTemperature">N/A</span>°C
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Boiler</span>
+            <span class="badge" id="boilerStatusBadge">
+              <span id="boilerStatus">N/A</span>
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Machine</span>
+            <span class="badge badge-success" id="machineStateBadge">
+              <span id="machineState">N/A</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col">
-        <h3>Normal PID</h3>
-        <label for="configP">P</label>
-          <input type="number" inputmode="numeric" name="configP" id="configP" step="0.1" />
-        <label for="configI">I</label>
-        <input type="number" inputmode="numeric" name="configI" id="configI" step="0.1" />
-        <label for="configD">D</label>
-          <input type="number" inputmode="numeric" name="configD" id="configD" step="0.1" />
-      </div>
-      <div class="col">
-        <h3>Adaptive PID</h3>
-        <label for="configAP">aP</label>
-        <input type="number" inputmode="numeric" name="configAP" id="configAP" step="0.1" />
-        <label for="configAI">aI</label>
-        <input type="number" inputmode="numeric" name="configAI" id="configAI" step="0.1" />
-        <label for="configAD">aD</label>
-        <input type="number" inputmode="numeric" name="configAD" id="configAD" step="0.1" />
+    <!-- Chart Card -->
+    <div class="card chart-card">
+      <h2>🌡️ Temperature History</h2>
+      <div class="chart-container">
+        <canvas id="tempGraph" width="350" height="200"></canvas>
       </div>
     </div>
-    <button id="save" type="button" onclick="updateConfig();">Save</button>
+
+    <!-- Configuration Card -->
+    <div class="card config-card">
+      <h2>⚙️ PID Configuration</h2>
+      <div class="config-wrapper">
+        <div class="row">
+          <div class="input-group">
+            <label for="configTargetTemperature">Target Temperature</label>
+            <div class="input-wrapper">
+              <input type="number" inputmode="numeric" name="configTargetTemperature" id="configTargetTemperature" step="1" />
+              <span class="input-suffix">°C</span>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="configOvershoot">Temperature Overshoot</label>
+            <div class="input-wrapper">
+              <input type="number" inputmode="numeric" name="configOvershoot" id="configOvershoot" step="0.1" />
+              <span class="input-suffix">°C</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pid-grid">
+          <div class="pid-section">
+            <h3>Normal PID</h3>
+            <div class="input-group">
+              <label for="configP">Proportional (P)</label>
+              <input type="number" inputmode="numeric" name="configP" id="configP" step="0.1" />
+            </div>
+            <div class="input-group">
+              <label for="configI">Integral (I)</label>
+              <input type="number" inputmode="numeric" name="configI" id="configI" step="0.1" />
+            </div>
+            <div class="input-group">
+              <label for="configD">Derivative (D)</label>
+              <input type="number" inputmode="numeric" name="configD" id="configD" step="0.1" />
+            </div>
+          </div>
+          <div class="pid-section">
+            <h3>Adaptive PID</h3>
+            <div class="input-group">
+              <label for="configAP">Proportional (aP)</label>
+              <input type="number" inputmode="numeric" name="configAP" id="configAP" step="0.1" />
+            </div>
+            <div class="input-group">
+              <label for="configAI">Integral (aI)</label>
+              <input type="number" inputmode="numeric" name="configAI" id="configAI" step="0.1" />
+            </div>
+            <div class="input-group">
+              <label for="configAD">Derivative (aD)</label>
+              <input type="number" inputmode="numeric" name="configAD" id="configAD" step="0.1" />
+            </div>
+          </div>
+        </div>
+        <button id="save" type="button" class="btn btn-primary" onclick="updateConfig();">💾 Save Configuration</button>
+      </div>
+    </div>
+
+    <!-- WiFi Configuration Card -->
+    <div class="card wifi-card">
+      <h2>📶 WiFi Credentials</h2>
+      <form id="wifiCredsForm" onsubmit="submitWifiCreds(event)">
+        <div class="row">
+          <div class="input-group">
+            <label for="wifiSsid">Network SSID</label>
+            <input type="text" id="wifiSsid" name="ssid" required placeholder="Enter WiFi network name" />
+          </div>
+          <div class="input-group">
+            <label for="wifiPassword">Password</label>
+            <input type="password" id="wifiPassword" name="password" required placeholder="Enter WiFi password" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Save WiFi</button>
+      </form>
+      <div id="wifiCredsMsg"></div>
+    </div>
+
+    <footer>
+      <p>Rancilio Silvia PID Controller &copy; 2026</p>
+    </footer>
   </div>
+
   <ul class="prophet"></ul>
-
-  <div class="wifi-credentials-wrapper" style="margin-top:2em;">
-    <h2>Update WiFi Credentials</h2>
-    <form id="wifiCredsForm" onsubmit="submitWifiCreds(event)">
-      <div class="row">
-        <div class="col">
-          <label for="wifiSsid">SSID</label>
-          <input type="text" id="wifiSsid" name="ssid" required />
-        </div>
-        <div class="col">
-          <label for="wifiPassword">Password</label>
-          <input type="password" id="wifiPassword" name="password" required />
-        </div>
-      </div>
-      <button type="submit">Save WiFi</button>
-    </form>
-    <div id="wifiCredsMsg"></div>
-  </div>
 </body>
 <script type="text/javascript" src="smoothie.js"></script>
 <script type="text/javascript" src="prophet.min.js"></script>
 <script>
 var smoothie = new SmoothieChart({
   labels: {
-    precision:2
+    precision: 2,
+    fillStyle: '#6b7280',
+    fontSize: 12
   },
-  tooltip:true,
-  maxValue:120,
-  minValue:20
+  grid: {
+    fillStyle: 'transparent',
+    strokeStyle: 'rgba(200, 200, 200, 0.3)',
+    verticalSections: 6,
+    borderVisible: false
+  },
+  tooltip: true,
+  tooltipLine: {
+    strokeStyle: '#667eea'
+  },
+  maxValue: 120,
+  minValue: 20,
+  interpolation: 'linear',
+  millisPerPixel: 50
 });
 smoothie.streamTo(document.getElementById("tempGraph"), 500);
 var tempLine = new TimeSeries();
@@ -115,10 +179,26 @@ const updateStatus = () => {
   .then(val => {
     clearTimeout(id);
     tempLine.append(new Date().getTime(), val.temperature);
-    currentTempEl.innerHTML = val.temperature;
+    currentTempEl.innerHTML = val.temperature.toFixed(2);
     targetTempEl.innerHTML = val.targetTemperature;
-    boilerStatusEl.innerHTML = val.boilerStatus ? 'On' : 'Off';
+
+    // Update boiler status with appropriate badge color
+    const boilerBadge = document.getElementById('boilerStatusBadge');
+    const isBoilerOn = val.boilerStatus;
+    boilerStatusEl.innerHTML = isBoilerOn ? '🔥 On' : 'Off';
+    boilerBadge.className = 'badge ' + (isBoilerOn ? 'badge-warning' : 'badge-secondary');
+
+    // Update machine state with appropriate badge color
+    const machineBadge = document.getElementById('machineStateBadge');
     machineStateEl.innerHTML = val.machineState;
+    if (val.machineState === 'Ready') {
+      machineBadge.className = 'badge badge-success';
+    } else if (val.machineState === 'Heating') {
+      machineBadge.className = 'badge badge-warning';
+    } else {
+      machineBadge.className = 'badge badge-secondary';
+    }
+
     setTimeout(updateStatus, 500);
   }).catch(err => {
     console.error('Error getting status', err);
@@ -176,8 +256,12 @@ const jsLcFirst = (string) => {
 
 getConfig();
 updateStatus();
-// Add to SmoothieChart
-smoothie.addTimeSeries(tempLine, {lineWidth:2,strokeStyle:'#00ff00'});
+// Add current temperature line to chart with gradient effect
+smoothie.addTimeSeries(tempLine, {
+  lineWidth: 3,
+  strokeStyle: '#667eea',
+  fillStyle: 'rgba(102, 126, 234, 0.2)'
+});
 </script>
 <script>
 function submitWifiCreds(e) {
