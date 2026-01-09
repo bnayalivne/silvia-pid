@@ -1,3 +1,5 @@
+#pragma once
+
 void resetConfig();
 bool saveConfig();
 bool loadConfig();

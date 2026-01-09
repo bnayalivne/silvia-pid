@@ -1,3 +1,5 @@
+#pragma once
+
 #define S_P 91.0
 #define S_I 0.26
 #define S_D 7950.0
