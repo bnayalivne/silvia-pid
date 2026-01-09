@@ -6,6 +6,7 @@
 #include <PID_v1.h>
 #include <config.h>
 #include <brewdetection.h>
+#include <state_machine.h>
 #include <ArduinoOTA.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -18,22 +19,18 @@
 //
 
 double currentTemp = 0;
-int machineState = 0;
-int previousMachineState = 0;
+int machineState = STATE_INIT;
+int previousMachineState = STATE_INIT;
 
 double gTargetTemp = S_TSET;
 double gOvershoot = S_TBAND;
 double gOutputPwr = 0.0;
 double gP = S_P, gI = S_I, gD = S_D;
 double gaP = S_aP, gaI = S_aI, gaD = S_aD;
-const int steamTempDetection = 120;
 
 boolean overShootMode = false;
 unsigned long time_now = 0;
 unsigned long time_last = 0;
-
-int machinestatecold = 0;
-unsigned long machinestatecoldmillis = 0;
 
 double aggKp = AGGKP;
 double aggTn = AGGTN;
@@ -55,7 +52,8 @@ PID ESPPID(&currentTemp, &gOutputPwr, &gTargetTemp, aggKp, aggKi, aggKd, 1, DIRE
 
 void loopPID()
 {
-  if (machineState == 0 || machineState == 10 || machineState == 19) // Cold Start states
+  // Cold start states - use aggressive tuning
+  if (machineState == STATE_INIT || machineState == STATE_COLDSTART || machineState == STATE_PREREADY)
   {
     if (startTn != 0)
     {
@@ -66,11 +64,10 @@ void loopPID()
       startKi = 0;
     }
     ESPPID.SetTunings(startKp, startKi, 0, P_ON_M);
-    // normal PID
   }
-  if (machineState == 20)
-  { // Prevent overwriting of brewdetection values
-    // calc ki, kd
+  // Ready state - normal PID
+  if (machineState == STATE_READY)
+  {
     if (aggTn != 0)
     {
       aggKi = aggKp / aggTn;
@@ -82,10 +79,9 @@ void loopPID()
     aggKd = aggTv * aggKp;
     ESPPID.SetTunings(aggKp, aggKi, aggKd, 1);
   }
-  // BD PID
-  if (machineState >= 30 && machineState <= 35)
+  // Brewing states - brew detection PID
+  if (machineState == STATE_BREWING || machineState == STATE_POSTBREW)
   {
-    // calc ki, kd
     if (aggbTn != 0)
     {
       aggbKi = aggbKp / aggbTn;
@@ -97,13 +93,14 @@ void loopPID()
     aggbKd = aggbTv * aggbKp;
     ESPPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
   }
-  if (machineState == 40) // STEAM
+  // Steam mode
+  if (machineState == STATE_STEAM)
   {
     ESPPID.SetTunings(150, 0, 0, 1);
   }
-  if (machineState == 45) // chill-mode after steam
+  // Chill mode after steam
+  if (machineState == STATE_CHILL)
   {
-    // calc ki, kd
     if (aggbTn != 0)
     {
       aggbKi = aggbKp / aggbTn;
@@ -114,140 +111,6 @@ void loopPID()
     }
     aggbKd = aggbTv * aggbKp;
     ESPPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
-  }
-}
-
-void checkMachineState()
-{
-  /*
-  00 = init
-  10 = cold start
-  19 = Setpoint -1 Celsius
-  20 = Setpoint
-  30 = Brewing
-  35 = After brewing
-  40 = Steam
-  */
-  int detected = 0;
-  switch (machineState)
-  {
-  // init
-  case 0:
-    if (currentTemp < (gTargetTemp - 10))
-    {
-      machineState = 10;
-    }
-    else if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-    else
-    {
-      machineState = 20;
-    }
-    break;
-  // cold start
-  case 10:
-    switch (machinestatecold)
-    {
-    case 0:
-      if (currentTemp >= (gTargetTemp - 1) && currentTemp < 150)
-      {
-        machinestatecoldmillis = millis(); // get millis for interval calc
-        machinestatecold = 10;             // new state
-      }
-      break;
-    case 10:
-      if (currentTemp < (gTargetTemp - 1))
-      {
-        machinestatecold = 0; //  Input was only one time above BrewSetPoint, reset machinestatecold
-      }
-      if (machinestatecoldmillis + 10 * 1000 < millis()) // 10 sec Input above BrewSetPoint, no set new state
-      {
-        machineState = 19;
-      }
-      break;
-    }
-    if (totalBrewTime > 0)
-    {
-      machineState = 30;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-    break;
-  // Setpoint -1 Celsius
-  case 19:
-    if (currentTemp >= gTargetTemp)
-    {
-      machineState = 20;
-    }
-    if (totalBrewTime > 0)
-    {
-      machineState = 30;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-  case 20:
-    brewdetection(gTargetTemp);
-    if (totalBrewTime > 0)
-    {
-      machineState = 30;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-    break;
-  case 30:
-    detected = brewdetection(gTargetTemp);
-    if (detected == 0)
-    {
-      machineState = 20;
-    }
-    else if (totalBrewTime > 35 * 1000)
-    {
-      // after 35 seconds
-      machineState = 35;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-    break;
-  case 35:
-    detected = brewdetection(gTargetTemp);
-    if (detected == 0)
-    {
-      machineState = 20;
-    }
-    else
-    {
-      machineState = 30;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-  case 40:
-    if (currentTemp < steamTempDetection)
-    {
-      machineState = 45;
-    }
-    break;
-  case 45:
-    if (heatrateaverage > 0 && currentTemp < (gTargetTemp + 2))
-    {
-      machineState = 20;
-    }
-    if (currentTemp >= steamTempDetection)
-    {
-      machineState = 40;
-    }
-    break;
   }
 }
 

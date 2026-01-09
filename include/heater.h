@@ -1,3 +1,5 @@
+#pragma once
+
 void setupHeater();
 void updateHeater();
 void setHeatPowerPercentage(float power);
