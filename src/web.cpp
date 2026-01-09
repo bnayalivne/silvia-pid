@@ -6,6 +6,7 @@
 #include <sensor.h>
 #include <heater.h>
 #include <shared.h>
+#include <state_machine.h>
 #include <config.h>
 #include <ArduinoJson.h>
 
@@ -27,19 +28,19 @@ void handleStatus(AsyncWebServerRequest *request)
 {
 
     String strMachineState = "Init";
-    if (machineState < 19)
+    if (machineState == STATE_INIT || machineState == STATE_COLDSTART)
     {
         strMachineState = "Cold start";
     }
-    else if (machineState >= 19 && machineState <= 20)
+    else if (machineState == STATE_PREREADY || machineState == STATE_READY)
     {
         strMachineState = "Ready";
     }
-    else if (machineState >= 30 && machineState <= 35)
+    else if (machineState == STATE_BREWING || machineState == STATE_POSTBREW)
     {
         strMachineState = "Brewing";
     }
-    else if (machineState >= 40 && machineState <= 45)
+    else if (machineState == STATE_STEAM || machineState == STATE_CHILL)
     {
         strMachineState = "Steam";
     }

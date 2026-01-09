@@ -11,134 +11,129 @@ extern double currentTemp;
 
 void checkMachineState()
 {
-  /*
-  00 = init
-  10 = cold start
-  19 = Setpoint -1 Celsius
-  20 = Setpoint
-  30 = Brewing
-  35 = After brewing
-  40 = Steam
-  45 = Chill after steam
-  */
   int detected = 0;
   switch (machineState)
   {
-  // init
-  case 0:
+  case STATE_INIT:
     if (currentTemp < (gTargetTemp - 10))
     {
-      machineState = 10;
+      machineState = STATE_COLDSTART;
     }
     else if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
     else
     {
-      machineState = 20;
+      machineState = STATE_READY;
     }
     break;
-  // cold start
-  case 10:
+
+  case STATE_COLDSTART:
     switch (machinestatecold)
     {
     case 0:
       if (currentTemp >= (gTargetTemp - 1) && currentTemp < 150)
       {
-        machinestatecoldmillis = millis(); // get millis for interval calc
-        machinestatecold = 10;             // new state
+        machinestatecoldmillis = millis();
+        machinestatecold = 10;
       }
       break;
     case 10:
       if (currentTemp < (gTargetTemp - 1))
       {
-        machinestatecold = 0; //  Input was only one time above BrewSetPoint, reset machinestatecold
+        machinestatecold = 0;
       }
-      if (machinestatecoldmillis + 10 * 1000 < millis()) // 10 sec Input above BrewSetPoint, no set new state
+      if (machinestatecoldmillis + 10 * 1000 < millis())
       {
-        machineState = 19;
+        machineState = STATE_PREREADY;
       }
       break;
     }
     if (totalBrewTime > 0)
     {
-      machineState = 30;
+      machineState = STATE_BREWING;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
     break;
-  // Setpoint -1 Celsius
-  case 19:
+
+  case STATE_PREREADY:
     if (currentTemp >= gTargetTemp)
     {
-      machineState = 20;
+      machineState = STATE_READY;
     }
     if (totalBrewTime > 0)
     {
-      machineState = 30;
+      machineState = STATE_BREWING;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
-  case 20:
+    // fall through to STATE_READY
+
+  case STATE_READY:
     brewdetection(gTargetTemp);
     if (totalBrewTime > 0)
     {
-      machineState = 30;
+      machineState = STATE_BREWING;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
     break;
-  case 30:
+
+  case STATE_BREWING:
     detected = brewdetection(gTargetTemp);
     if (detected == 0)
     {
-      machineState = 20;
+      machineState = STATE_READY;
     }
     else if (totalBrewTime > 35 * 1000)
     {
-      // after 35 seconds
-      machineState = 35;
+      machineState = STATE_POSTBREW;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
     break;
-  case 35:
+
+  case STATE_POSTBREW:
     detected = brewdetection(gTargetTemp);
     if (detected == 0)
     {
-      machineState = 20;
+      machineState = STATE_READY;
     }
     else
     {
-      machineState = 30;
+      machineState = STATE_BREWING;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
-  case 40:
+    // fall through to STATE_STEAM
+
+  case STATE_STEAM:
     if (currentTemp < STEAM_TEMP_DETECTION)
     {
-      machineState = 45;
+      machineState = STATE_CHILL;
     }
     break;
-  case 45:
+
+  case STATE_CHILL:
     if (heatrateaverage > 0 && currentTemp < (gTargetTemp + 2))
     {
-      machineState = 20;
+      machineState = STATE_READY;
     }
     if (currentTemp >= STEAM_TEMP_DETECTION)
     {
-      machineState = 40;
+      machineState = STATE_STEAM;
     }
     break;
   }

@@ -19,8 +19,8 @@
 //
 
 double currentTemp = 0;
-int machineState = 0;
-int previousMachineState = 0;
+int machineState = STATE_INIT;
+int previousMachineState = STATE_INIT;
 
 double gTargetTemp = S_TSET;
 double gOvershoot = S_TBAND;
@@ -52,7 +52,8 @@ PID ESPPID(&currentTemp, &gOutputPwr, &gTargetTemp, aggKp, aggKi, aggKd, 1, DIRE
 
 void loopPID()
 {
-  if (machineState == 0 || machineState == 10 || machineState == 19) // Cold Start states
+  // Cold start states - use aggressive tuning
+  if (machineState == STATE_INIT || machineState == STATE_COLDSTART || machineState == STATE_PREREADY)
   {
     if (startTn != 0)
     {
@@ -63,11 +64,10 @@ void loopPID()
       startKi = 0;
     }
     ESPPID.SetTunings(startKp, startKi, 0, P_ON_M);
-    // normal PID
   }
-  if (machineState == 20)
-  { // Prevent overwriting of brewdetection values
-    // calc ki, kd
+  // Ready state - normal PID
+  if (machineState == STATE_READY)
+  {
     if (aggTn != 0)
     {
       aggKi = aggKp / aggTn;
@@ -79,10 +79,9 @@ void loopPID()
     aggKd = aggTv * aggKp;
     ESPPID.SetTunings(aggKp, aggKi, aggKd, 1);
   }
-  // BD PID
-  if (machineState >= 30 && machineState <= 35)
+  // Brewing states - brew detection PID
+  if (machineState == STATE_BREWING || machineState == STATE_POSTBREW)
   {
-    // calc ki, kd
     if (aggbTn != 0)
     {
       aggbKi = aggbKp / aggbTn;
@@ -94,13 +93,14 @@ void loopPID()
     aggbKd = aggbTv * aggbKp;
     ESPPID.SetTunings(aggbKp, aggbKi, aggbKd, 1);
   }
-  if (machineState == 40) // STEAM
+  // Steam mode
+  if (machineState == STATE_STEAM)
   {
     ESPPID.SetTunings(150, 0, 0, 1);
   }
-  if (machineState == 45) // chill-mode after steam
+  // Chill mode after steam
+  if (machineState == STATE_CHILL)
   {
-    // calc ki, kd
     if (aggbTn != 0)
     {
       aggbKi = aggbKp / aggbTn;

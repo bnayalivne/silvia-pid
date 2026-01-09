@@ -16,5 +16,5 @@ extern double gaP;
 extern double gaI;
 extern double gaD;
 
-// Machine state
+// Machine state (uses MachineState enum values from state_machine.h)
 extern int machineState;
