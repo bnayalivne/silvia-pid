@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#include <memory>
 #include <ArduinoJson.h>
 #include <shared.h>
 #include "FS.h"

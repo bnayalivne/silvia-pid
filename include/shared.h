@@ -4,7 +4,7 @@
 #define S_aP 100.0
 #define S_aI 0.0
 #define S_aD 0.0
-#define S_TSET 99
+#define S_TSET 93
 #define S_TBAND 1.5
 
 // PID - offline values

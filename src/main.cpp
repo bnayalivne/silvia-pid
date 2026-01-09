@@ -7,6 +7,10 @@
 #include <config.h>
 #include <brewdetection.h>
 #include <ArduinoOTA.h>
+#include <SPI.h>
+#include <Wire.h>
+
+#include "screen.h"
 
 #define PID_INTERVAL 1000
 //
@@ -65,7 +69,7 @@ void loopPID()
     // normal PID
   }
   if (machineState == 20)
-  { //Prevent overwriting of brewdetection values
+  { // Prevent overwriting of brewdetection values
     // calc ki, kd
     if (aggTn != 0)
     {
@@ -115,19 +119,19 @@ void loopPID()
 
 void checkMachineState()
 {
-  /* 
+  /*
   00 = init
   10 = cold start
   19 = Setpoint -1 Celsius
   20 = Setpoint
-  30 = Brewing 
+  30 = Brewing
   35 = After brewing
   40 = Steam
   */
   int detected = 0;
   switch (machineState)
   {
-  //init
+  // init
   case 0:
     if (currentTemp < (gTargetTemp - 10))
     {
@@ -142,7 +146,7 @@ void checkMachineState()
       machineState = 20;
     }
     break;
-  //cold start
+  // cold start
   case 10:
     switch (machinestatecold)
     {
@@ -206,7 +210,7 @@ void checkMachineState()
     }
     else if (totalBrewTime > 35 * 1000)
     {
-      //after 35 seconds
+      // after 35 seconds
       machineState = 35;
     }
     if (currentTemp >= steamTempDetection)
@@ -259,8 +263,7 @@ void setupOTA()
                    type = "filesystem";
 
                  // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-                 Serial.println("Start updating " + type);
-               })
+                 Serial.println("Start updating " + type); })
       .onEnd([]()
              { Serial.println("\nEnd"); })
       .onProgress([](unsigned int progress, unsigned int total)
@@ -277,8 +280,7 @@ void setupOTA()
                  else if (error == OTA_RECEIVE_ERROR)
                    Serial.println("Receive Failed");
                  else if (error == OTA_END_ERROR)
-                   Serial.println("End Failed");
-               });
+                   Serial.println("End Failed"); });
 
   ArduinoOTA.begin();
 }
@@ -317,6 +319,7 @@ void setup()
   setupWeb();
   setupSensor();
   setupHeater();
+  setupScreen();
   setupOTA();
 
   // start PID
@@ -332,7 +335,6 @@ void setup()
 void loop()
 {
   time_now = millis();
-
   ArduinoOTA.handle();
 
   currentTemp = getCurrentTemperature();
@@ -346,4 +348,6 @@ void loop()
     setHeatPowerPercentage(gOutputPwr);
   }
   updateHeater();
+
+  updateScreen();
 }

@@ -67,6 +67,24 @@
     <button id="save" type="button" onclick="updateConfig();">Save</button>
   </div>
   <ul class="prophet"></ul>
+
+  <div class="wifi-credentials-wrapper" style="margin-top:2em;">
+    <h2>Update WiFi Credentials</h2>
+    <form id="wifiCredsForm" onsubmit="submitWifiCreds(event)">
+      <div class="row">
+        <div class="col">
+          <label for="wifiSsid">SSID</label>
+          <input type="text" id="wifiSsid" name="ssid" required />
+        </div>
+        <div class="col">
+          <label for="wifiPassword">Password</label>
+          <input type="password" id="wifiPassword" name="password" required />
+        </div>
+      </div>
+      <button type="submit">Save WiFi</button>
+    </form>
+    <div id="wifiCredsMsg"></div>
+  </div>
 </body>
 <script type="text/javascript" src="smoothie.js"></script>
 <script type="text/javascript" src="prophet.min.js"></script>
@@ -160,5 +178,25 @@ getConfig();
 updateStatus();
 // Add to SmoothieChart
 smoothie.addTimeSeries(tempLine, {lineWidth:2,strokeStyle:'#00ff00'});
+</script>
+<script>
+function submitWifiCreds(e) {
+  e.preventDefault();
+  const form = document.getElementById('wifiCredsForm');
+  const data = new URLSearchParams();
+  data.append('ssid', form.wifiSsid.value);
+  data.append('password', form.wifiPassword.value);
+  fetch('/wifi-creds', {
+    method: 'POST',
+    body: data
+  })
+  .then(res => res.json())
+  .then(val => {
+    document.getElementById('wifiCredsMsg').innerHTML = val.status ? '<span style="color:green">WiFi credentials saved. Reboot to connect.</span>' : '<span style="color:red">Failed to save WiFi credentials.</span>';
+  })
+  .catch(() => {
+    document.getElementById('wifiCredsMsg').innerHTML = '<span style="color:red">Error saving WiFi credentials.</span>';
+  });
+}
 </script>
 </html>
